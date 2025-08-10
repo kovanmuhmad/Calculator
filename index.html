@@ -4,7 +4,125 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculator</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .display {
+            width: 100%;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            border: none;
+            border-radius: 15px;
+            font-size: 2.5em;
+            color: white;
+            text-align: right;
+            padding: 0 20px;
+            margin-bottom: 20px;
+            outline: none;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .btn {
+            height: 70px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.3em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.operator {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        .btn.operator:hover {
+            background: linear-gradient(135deg, #ff5252, #e53e3e);
+        }
+
+        .btn.clear {
+            background: linear-gradient(135deg, #ffa726, #ff7043);
+        }
+
+        .btn.clear:hover {
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+        }
+
+        .btn.equals {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            grid-column: span 2;
+        }
+
+        .btn.equals:hover {
+            background: linear-gradient(135deg, #43a047, #388e3c);
+        }
+
+        .btn.zero {
+            grid-column: span 2;
+        }
+
+        @media (max-width: 400px) {
+            .calculator {
+                padding: 20px;
+            }
+            
+            .display {
+                height: 60px;
+                font-size: 2em;
+            }
+            
+            .btn {
+                height: 60px;
+                font-size: 1.1em;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="calculator">
@@ -34,7 +152,108 @@
             <button class="btn" onclick="appendToDisplay('.')">.</button>
         </div>
     </div>
-    
-    <script src="script.js"></script>
+
+    <script>
+        let display = document.getElementById('display');
+        let currentInput = '';
+        let shouldResetDisplay = false;
+
+        function appendToDisplay(value) {
+            if (shouldResetDisplay) {
+                currentInput = '';
+                shouldResetDisplay = false;
+            }
+            
+            // Prevent multiple decimal points
+            if (value === '.') {
+                let parts = currentInput.split(/[\+\-\*\/]/);
+                let lastPart = parts[parts.length - 1];
+                if (lastPart.includes('.')) {
+                    return;
+                }
+            }
+            
+            // Prevent multiple operators in a row
+            if (['+', '-', '*', '/'].includes(value)) {
+                if (['+', '-', '*', '/'].includes(currentInput.slice(-1))) {
+                    currentInput = currentInput.slice(0, -1);
+                }
+            }
+            
+            currentInput += value;
+            display.value = currentInput.replace(/\*/g, '×');
+        }
+
+        function clearDisplay() {
+            currentInput = '';
+            display.value = '';
+        }
+
+        function deleteLast() {
+            currentInput = currentInput.slice(0, -1);
+            display.value = currentInput.replace(/\*/g, '×');
+        }
+
+        function calculate() {
+            try {
+                if (currentInput === '') return;
+                
+                // Replace × with * for calculation
+                let expression = currentInput.replace(/×/g, '*');
+                
+                // Basic validation
+                if (['+', '-', '*', '/'].includes(expression.slice(-1))) {
+                    return;
+                }
+                
+                let result = eval(expression);
+                
+                // Handle division by zero
+                if (!isFinite(result)) {
+                    display.value = 'Error';
+                    currentInput = '';
+                    return;
+                }
+                
+                // Round to avoid floating point precision issues
+                result = Math.round(result * 100000000) / 100000000;
+                
+                display.value = result;
+                currentInput = result.toString();
+                shouldResetDisplay = true;
+                
+            } catch (error) {
+                display.value = 'Error';
+                currentInput = '';
+            }
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            
+            if (key >= '0' && key <= '9') {
+                appendToDisplay(key);
+            } else if (key === '.') {
+                appendToDisplay('.');
+            } else if (key === '+') {
+                appendToDisplay('+');
+            } else if (key === '-') {
+                appendToDisplay('-');
+            } else if (key === '*') {
+                appendToDisplay('*');
+            } else if (key === '/') {
+                event.preventDefault();
+                appendToDisplay('/');
+            } else if (key === 'Enter' || key === '=') {
+                event.preventDefault();
+                calculate();
+            } else if (key === 'Escape' || key === 'c' || key === 'C') {
+                clearDisplay();
+            } else if (key === 'Backspace') {
+                deleteLast();
+            }
+        });
+    </script>
 </body>
 </html>
